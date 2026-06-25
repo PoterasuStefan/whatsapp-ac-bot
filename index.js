@@ -24,43 +24,17 @@ client.on('ready', () => {
     console.log('\n✅ Bot conectat! Ascult grupul...\n');
 });
 
-async function intreabăOllama(mesaj) {
-    const prompt = `Ești un asistent smart home amuzant. Ai acces doar la aerul conditionat. Analizează mesajul și răspunde în formatul:
-ACTIUNE: <actiunea>
-MESAJ: <mesajul tău>
-
-Unde actiunea este EXACT unul din:
-- PORNESTE_AC (dacă e cald sau vrea AC pornit)
-- OPRESTE_AC (dacă e frig sau vrea AC oprit)
-- IGNORA (altceva - nu răspunde nimic)
-
-Mesaj: "${mesaj}"`;
-
-    try {
-        const response = await fetch('http://127.0.0.1:11434/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: 'llama3.2',
-                prompt: prompt,
-                stream: false
-            })
-        });
-        const data = await response.json();
-        const raspuns = data.response.trim();
-        console.log(`🤖 Ollama a răspuns:\n${raspuns}`);
-
-        const actiuneLinie = raspuns.split('\n').find(l => l.startsWith('ACTIUNE:'));
-        const mesajLinie = raspuns.split('\n').find(l => l.startsWith('MESAJ:'));
-
-        const actiune = actiuneLinie ? actiuneLinie.replace('ACTIUNE:', '').trim().toUpperCase() : 'IGNORA';
-        const mesajOllama = mesajLinie ? mesajLinie.replace('MESAJ:', '').trim() : '';
-
-        return { actiune, mesajOllama };
-    } catch (error) {
-        console.error('❌ Eroare Ollama:', error.message);
-        return { actiune: 'IGNORA', mesajOllama: '' };
+function detecteazaComanda(text) {
+    const t = text.toLowerCase();
+    if (t.includes('mi-e cald') || t.includes('porneste ac') || t.includes('pornește ac') || 
+        t.includes('da drumul la ac') || t.includes('e cald')) {
+        return 'PORNESTE_AC';
     }
+    if (t.includes('mi-e frig') || t.includes('opreste ac') || t.includes('oprește ac') || 
+        t.includes('oprit ac') || t.includes('e frig')) {
+        return 'OPRESTE_AC';
+    }
+    return 'IGNORA';
 }
 
 async function handleMessage(msg) {
@@ -69,16 +43,15 @@ async function handleMessage(msg) {
     const text = msg.body;
     console.log(`📨 Mesaj detectat: "${text}"`);
 
-    const { actiune, mesajOllama } = await intreabăOllama(text);
+    const actiune = detecteazaComanda(text);
 
     if (actiune === 'PORNESTE_AC') {
-        msg.reply(`🤖 *[SISTEM AUTOMATIZARE AC]*\n----------------------------------\n${mesajOllama}\n----------------------------------\n⚙️ _Rulat via SmartThings Bot_`);
+        msg.reply('⏳ Pornesc AC-ul...');
         ruleazaAC('on', msg);
     } else if (actiune === 'OPRESTE_AC') {
-        msg.reply(`🤖 *[SISTEM AUTOMATIZARE AC]*\n----------------------------------\n${mesajOllama}\n----------------------------------\n⚙️ _Rulat via SmartThings Bot_`);
+        msg.reply('⏳ Opresc AC-ul...');
         ruleazaAC('off', msg);
-    } 
-    else {
+    } else {
         console.log('💬 Mesaj ignorat.');
     }
 }
