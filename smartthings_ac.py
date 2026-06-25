@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Control interactiv aer condiționat prin SmartThings API
 """
@@ -7,6 +8,10 @@ import urllib.request
 import urllib.error
 import json
 import ssl
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
     import certifi
@@ -16,12 +21,13 @@ except ImportError:
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
 
-API_KEY = "5b3f7cc2-df5d-49c5-9666-70bde565c5d6"
+API_KEY = os.getenv("SMARTTHINGS_API_KEY")
 BASE_URL = "https://api.smartthings.com/v1"
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
 }
+
 
 def make_request(endpoint, method="GET", body=None):
     url = f"{BASE_URL}{endpoint}"
